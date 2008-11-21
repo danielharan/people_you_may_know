@@ -5,9 +5,7 @@ class Jaccard
   
   def initialize(subscriptions)
     @subscriptions = subscriptions
-    @similarities = SimilarityMatrix.new(@subscriptions) do |a,b| 
-      Jaccard.coefficient(a,b)
-    end
+    @similarities = SimilarityMatrix.new(@subscriptions, Proc.new {|a,b| Jaccard.coefficient(a,b) })
   end
 
   # returns weights for each person other_users are subscribed to.

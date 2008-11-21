@@ -8,18 +8,7 @@ class TestSimilarityMatrix < Test::Unit::TestCase
         '330' => ["250", "276", "330", "724", "739"], 
         '250' =>["213", "228", "250", "276", "290", "326", "330", "489", "531", "572", "579", "688", "724", "739"]
     }
-    @sm = SimilarityMatrix.new(prefs_hash) do |a,b| 
-      Jaccard.coefficient(a,b)
-    end
-  end
-  
-  def test_init_should_raise_if_no_block_given
-    begin
-      SimilarityMatrix.new({})
-      flunk "should have required a block"
-    rescue ArgumentError => e
-      assert /block/ =~ e.message, "message should tell user to pass a block"
-    end
+    @sm = SimilarityMatrix.new(prefs_hash, Proc.new {|a,b| Jaccard.coefficient(a,b)})
   end
   
   def test_init
