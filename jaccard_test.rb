@@ -29,11 +29,12 @@ class JaccardTest < Test::Unit::TestCase
     assert recos["228"] > recos["60"], "user 60 is only followed by 1 person, so should be lower than 228"
   end
   
-  def test_recommendation_should_be_empty_if_absolutely_no_overlap
+  def test_recommendation_should_be_zeros_if_absolutely_no_overlap
     jaccard = Jaccard.new({
       "1" => ["2", "3"],
-      "4" => ["5", "6"]})
-    assert_equal ({}), jaccard.recommendations_for("1")
+      "2" => ["4", "5"],
+      "3" => ["6", "7"]})
+    assert_equal ({"4" => 0, "5" => 0, "6" => 0, "7" => 0}), jaccard.recommendations_for("1")
   end
     
   def test_normalizes_from_0_to_1
@@ -55,4 +56,6 @@ class JaccardTest < Test::Unit::TestCase
       assert_equal expected_value, Jaccard.coefficient(*key)
     end
   end
+  
+  
 end

@@ -3,21 +3,23 @@ require 'similarity_matrix'
 class Jaccard
   attr_accessor :similarities
   
-  def initialize(user_hash)
-    @user_hash = user_hash
-    @similarities = SimilarityMatrix.new(@user_hash) do |a,b| 
+  def initialize(subscriptions)
+    @subscriptions = subscriptions
+    @similarities = SimilarityMatrix.new(@subscriptions) do |a,b| 
       Jaccard.coefficient(a,b)
     end
   end
-  
-  def recommendations_for(user_key)
-    recos, total_similarity = {}, 0
+
+  # returns weights for each person other_users are subscribed to.
+  # the guess value is higher if many other_users follow them.
+  # other_users count most if they're similar to you,
+  # as calculated by how much the people you follow overlap
+  def generate_recommendations_for(target_user, other_users)
+    recos     = {}
     
-    (@user_hash[user_key] - [user_key]).each do |following|
-      next if @user_hash[following].nil?
-      similarity = @similarities.find(user_key,following)
-      total_similarity += similarity
-      @user_hash[following].each do |recommendation|
+    other_users.each do |user_id|
+      similarity = @similarities.find(target_user,user_id)
+      @subscriptions[user_id].each do |recommendation|
         if recos.has_key?(recommendation)
           recos[recommendation] += similarity
         else
@@ -26,18 +28,34 @@ class Jaccard
       end
     end
     
-    return {} if total_similarity == 0
-    
-    recos.delete_if {|k,v| @user_hash[user_key].include?(k)}
-    recos.keys.each do |key|
-      recos[key] /= total_similarity #normalize data to max 1
-    end
-    
     recos
   end
   
+  def recommendations_for(target_user)
+    # generate a hash of all the users 1 degree away from you in the social network
+    other_users = (@subscriptions[target_user] - [target_user])
+    
+    recos = generate_recommendations_for(target_user, other_users)
+    
+    # ignore people you're already subscribed to
+    recos.delete_if {|k,v| @subscriptions[target_user].include?(k)}
+    
+    # normalize data to max 1
+    total_similarity = other_users.collect {|user_id| @similarities.find(target_user, user_id) }.sum.to_f
+    self.class.normalize(recos, 1, total_similarity)
+  end
+  
+  # see http://en.wikipedia.org/wiki/Jaccard_index
   def self.coefficient(a,b)
     result = (a & b).length / (a + b).uniq.length.to_f
     (result * 1000).round / 1000.0
+  end
+  
+  def self.normalize(data,max,divisor)
+    return data if divisor == 0
+    data.keys.each do |key|
+      data[key] /= divisor
+    end
+    data
   end
 end
