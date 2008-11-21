@@ -1,3 +1,5 @@
+require 'rubygems'
+require 'activesupport'
 require 'similarity_matrix'
 
 class Jaccard
@@ -14,7 +16,6 @@ class Jaccard
   # as calculated by how much the people you follow overlap
   def generate_recommendations_for(target_user, other_users)
     recos     = {}
-    
     other_users.each do |user_id|
       similarity = @similarities.find(target_user,user_id)
       @subscriptions[user_id].each do |recommendation|
@@ -25,6 +26,10 @@ class Jaccard
         end
       end
     end
+    
+    # normalize data to max 1
+    total_similarity = other_users.collect {|user_id| @similarities.find(target_user, user_id) }.sum.to_f
+    self.class.normalize(recos, 1, total_similarity)
     
     recos
   end
@@ -38,9 +43,7 @@ class Jaccard
     # ignore people you're already subscribed to
     recos.delete_if {|k,v| @subscriptions[target_user].include?(k)}
     
-    # normalize data to max 1
-    total_similarity = other_users.collect {|user_id| @similarities.find(target_user, user_id) }.sum.to_f
-    self.class.normalize(recos, 1, total_similarity)
+    recos
   end
   
   # see http://en.wikipedia.org/wiki/Jaccard_index
